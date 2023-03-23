@@ -1,0 +1,21 @@
+{
+  "dependencies": {
+    "@loaders.gl/core": "^3.3.1",
+    "@loaders.gl/gltf": "^3.3.1",
+    "dom-urls": "^1.1.0",
+    "fbx2gltf": "^0.9.7-p1",
+    "filereader": "^0.10.3",
+    "gltf-js-utils": "^6.0.0",
+    "three": "^0.150.1",
+    "three-gltf-loader": "^1.111.0",
+    "three-stl-loader": "^1.0.6",
+    "yargs": "^17.7.1"
+  },
+  "devDependencies": {
+    "@babel/cli": "^7.21.0",
+    "@babel/core": "^7.21.3"
+  },
+  "scripts": {
+    "build": "babel src -d lib"
+  }
+}
