@@ -1,0 +1,25 @@
+{
+  "name": "3dprintutils",
+  "version": "1.0.0",
+  "description": "Convert FBX 3D printing files to STL format",
+  "main": "fbx2stl.mjs",
+  "scripts": {
+    "test": "node --experimental-specifier-resolution=node 3dconvert.mjs input.fbx -t stl -o output.stl"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/fxspeiser/3DPrintUtils.git"
+  },
+  "keywords": [
+    "3DPrinting",
+    "3DPrintConversion",
+    "Prosthetics",
+    "Manufacturing"
+  ],
+  "author": "Frank Speiser",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/fxspeiser/3DPrintUtils/issues"
+  },
+  "homepage": "https://github.com/fxspeiser/3DPrintUtils#readme"
+}
