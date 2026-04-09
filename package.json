@@ -1,25 +1,50 @@
 {
-  "name": "3dprintutils",
-  "version": "1.0.0",
-  "description": "Convert FBX 3D printing files to STL format",
-  "main": "fbx2stl.mjs",
-  "scripts": {
-    "test": "node --experimental-specifier-resolution=node 3dconvert.mjs input.fbx -t stl -o output.stl"
+  "name": "3dprint-backporter",
+  "version": "2.0.0",
+  "description": "Convert modern 3D printing files to universally-supported formats for older printers",
+  "type": "module",
+  "bin": {
+    "3dprint-convert": "./cli.mjs"
   },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/fxspeiser/3DPrintUtils.git"
+  "scripts": {
+    "dev": "vite",
+    "dev:api": "node server.mjs",
+    "build": "vite build",
+    "start": "NODE_ENV=production node server.mjs",
+    "convert": "node cli.mjs"
+  },
+  "engines": {
+    "node": ">=18.0.0"
   },
   "keywords": [
     "3DPrinting",
     "3DPrintConversion",
     "Prosthetics",
-    "Manufacturing"
+    "Manufacturing",
+    "3MF",
+    "STL",
+    "GLTF",
+    "FBX",
+    "OBJ"
   ],
   "author": "Frank Speiser",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/fxspeiser/3DPrintUtils.git"
+  },
   "bugs": {
     "url": "https://github.com/fxspeiser/3DPrintUtils/issues"
   },
-  "homepage": "https://github.com/fxspeiser/3DPrintUtils#readme"
+  "homepage": "https://github.com/fxspeiser/3DPrintUtils#readme",
+  "dependencies": {
+    "archiver": "^7.0.1",
+    "express": "^4.18.2",
+    "filereader": "^0.10.3",
+    "linkedom": "^0.16.0",
+    "multer": "^1.4.5-lts.1",
+    "three": "^0.150.1",
+    "vite": "^8.0.8",
+    "yargs": "^17.7.1"
+  }
 }

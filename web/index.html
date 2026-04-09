@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>3D Print Backporter</title>
+</head>
+<body>
+
+<header>
+  <h1>3D Print Backporter</h1>
+  <p>Convert modern 3D files for older printers &mdash; helping bring prosthetics and medical devices everywhere</p>
+</header>
+
+<!-- Tab bar -->
+<nav class="tab-bar">
+  <button class="tab active" data-tab="convert">Convert</button>
+  <button class="tab" data-tab="library">Library</button>
+  <button class="tab" data-tab="discover">Discover</button>
+</nav>
+
+<main>
+  <!-- ==================== CONVERT TAB ==================== -->
+  <div class="tab-content active" id="tab-convert">
+    <div class="card">
+      <h2>1. Upload Files</h2>
+      <div class="drop-zone" id="dropZone">
+        <div class="drop-zone-icon">&#128196;</div>
+        <div class="drop-zone-text">Drop files or a folder here, or click to browse</div>
+        <div class="drop-zone-text" style="font-size:0.75rem; margin-top:0.25rem">
+          Supports: 3MF, GLTF, GLB, AMF, OBJ, FBX, STL, PLY, DAE &mdash; select multiple files or an entire directory
+        </div>
+        <div class="drop-zone-filename" id="fileName"></div>
+        <input type="file" id="fileInput" accept=".3mf,.gltf,.glb,.amf,.obj,.fbx,.stl,.ply,.dae" multiple>
+      </div>
+      <div class="upload-actions" style="display:flex; gap:0.5rem; margin-top:0.5rem; justify-content:center">
+        <label class="btn-secondary" style="cursor:pointer">
+          Select folder
+          <input type="file" id="folderInput" webkitdirectory style="display:none">
+        </label>
+        <button class="btn-secondary" id="clearFilesBtn" style="display:none">Clear all</button>
+      </div>
+      <div id="fileQueue" class="file-queue"></div>
+      <div class="file-info" id="fileInfo">
+        <dl id="fileInfoContent"></dl>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>2. Output Format</h2>
+      <div class="format-grid" id="formatGrid"></div>
+    </div>
+
+    <div class="card">
+      <h2>3. Backport Options</h2>
+      <div class="option-row">
+        <div>
+          <div class="option-label">Quality Mode</div>
+          <div class="option-desc" id="qualityDesc">Fast conversion for visual preview</div>
+        </div>
+        <select id="optQuality">
+          <option value="rendering">Rendering Optimized</option>
+          <option value="manufacturing">Manufacturing Precision</option>
+        </select>
+      </div>
+      <div class="option-row">
+        <div>
+          <div class="option-label">Merge Meshes</div>
+          <div class="option-desc">Combine multi-part models into a single mesh</div>
+        </div>
+        <label class="toggle"><input type="checkbox" id="optMerge"><span class="toggle-slider"></span></label>
+      </div>
+      <div class="option-row">
+        <div>
+          <div class="option-label">Strip Colors &amp; Materials</div>
+          <div class="option-desc">For single-color FDM printers</div>
+        </div>
+        <label class="toggle"><input type="checkbox" id="optStripColor"><span class="toggle-slider"></span></label>
+      </div>
+      <div class="option-row">
+        <div>
+          <div class="option-label">Binary Output</div>
+          <div class="option-desc">Smaller file size (recommended)</div>
+        </div>
+        <label class="toggle"><input type="checkbox" id="optBinary" checked><span class="toggle-slider"></span></label>
+      </div>
+      <div class="unit-row">
+        <span class="option-label">Unit Conversion:</span>
+        <select id="unitsFrom"><option value="">Source</option><option value="mm">mm</option><option value="cm">cm</option><option value="m">m</option><option value="inch">inch</option></select>
+        <span>&#8594;</span>
+        <select id="unitsTo"><option value="">Target</option><option value="mm">mm</option><option value="cm">cm</option><option value="m">m</option><option value="inch">inch</option></select>
+      </div>
+      <div class="range-row">
+        <div class="range-header">
+          <div>
+            <div class="option-label">Mesh Simplification</div>
+            <div class="option-desc">Reduce polygon count for lower-res printers</div>
+          </div>
+          <span class="range-value" id="simplifyValue">Off</span>
+        </div>
+        <input type="range" id="optSimplify" min="0" max="100" value="0" step="5">
+      </div>
+    </div>
+
+    <div class="card">
+      <button class="convert-btn" id="convertBtn" disabled>Convert &amp; Download</button>
+      <div class="convert-actions" id="convertActions" style="display:none; margin-top:0.75rem; text-align:center;">
+        <button class="btn-secondary" id="saveToLibraryBtn">Save to Library</button>
+      </div>
+      <div class="status" id="status"></div>
+    </div>
+  </div>
+
+  <!-- ==================== LIBRARY TAB ==================== -->
+  <div class="tab-content" id="tab-library">
+    <div class="card">
+      <div class="library-header">
+        <h2>Your Library</h2>
+        <div class="library-stats" id="libraryStats"></div>
+      </div>
+      <div class="library-toolbar">
+        <input type="text" id="librarySearch" class="search-input" placeholder="Search files...">
+        <select id="libraryCategory" class="filter-select">
+          <option value="">All categories</option>
+          <option value="prosthetics">Prosthetics</option>
+          <option value="medical">Medical</option>
+          <option value="downloaded">Downloaded</option>
+          <option value="converted">Converted</option>
+          <option value="uncategorized">Uncategorized</option>
+        </select>
+        <label class="btn-secondary btn-upload">
+          Add File
+          <input type="file" id="libraryFileInput" accept=".3mf,.gltf,.glb,.amf,.obj,.fbx,.stl,.ply,.dae" style="display:none">
+        </label>
+      </div>
+    </div>
+
+    <div id="libraryList"></div>
+
+    <div class="card empty-state" id="libraryEmpty" style="display:none">
+      <div style="text-align:center; padding:2rem 0; color:var(--text-muted)">
+        <div style="font-size:2rem; margin-bottom:0.5rem">&#128193;</div>
+        <p>Your library is empty.</p>
+        <p style="font-size:0.85rem; margin-top:0.5rem">Upload files or import from the Discover tab to get started.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== DISCOVER TAB ==================== -->
+  <div class="tab-content" id="tab-discover">
+    <div class="card">
+      <h2>Import from URL</h2>
+      <p class="option-desc" style="margin-bottom:0.75rem">Paste a direct download link to a 3D file to add it to your library.</p>
+      <div class="import-row">
+        <input type="text" id="importUrl" class="search-input" placeholder="https://example.com/prosthetic-hand.stl" style="flex:1">
+        <button class="btn-primary" id="importBtn">Import</button>
+      </div>
+      <div class="import-meta" id="importMeta" style="display:none; margin-top:0.75rem">
+        <input type="text" id="importName" class="search-input" placeholder="Name (optional)" style="margin-bottom:0.5rem">
+        <input type="text" id="importTags" class="search-input" placeholder="Tags: prosthetic, hand, e-nable (comma separated)">
+      </div>
+      <div class="status" id="importStatus"></div>
+    </div>
+
+    <div class="card">
+      <h2>Prosthetic &amp; Medical 3D File Sources</h2>
+      <p class="option-desc" style="margin-bottom:0.75rem">Curated directory of repositories with free prosthetic and medical device designs. Browse these sites to find files, then import using the URL above.</p>
+      <input type="text" id="sourceSearch" class="search-input" placeholder="Filter sources..." style="margin-bottom:1rem">
+      <div id="sourceList"></div>
+    </div>
+  </div>
+</main>
+
+<footer>
+  3D Print Backporter &mdash; Open source tool helping bring prosthetics and medical devices to every 3D printer
+</footer>
+
+<script type="module" src="/main.js"></script>
+</body>
+</html>

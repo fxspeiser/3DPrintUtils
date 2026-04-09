@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>3D Print Backporter</title>
+  <style>
+    :root {
+      --primary: #2563eb;
+      --primary-dark: #1d4ed8;
+      --success: #16a34a;
+      --error: #dc2626;
+      --bg: #f8fafc;
+      --surface: #ffffff;
+      --text: #1e293b;
+      --text-muted: #64748b;
+      --border: #e2e8f0;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    header {
+      background: var(--primary);
+      color: white;
+      padding: 1.5rem 2rem;
+      text-align: center;
+    }
+
+    header h1 { font-size: 1.5rem; font-weight: 600; }
+    header p { opacity: 0.9; font-size: 0.9rem; margin-top: 0.25rem; }
+
+    main {
+      max-width: 640px;
+      width: 100%;
+      margin: 2rem auto;
+      padding: 0 1rem;
+      flex: 1;
+    }
+
+    .card {
+      background: var(--surface);
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .card h2 {
+      font-size: 1rem;
+      font-weight: 600;
+      margin-bottom: 1rem;
+      color: var(--text);
+    }
+
+    /* Drop zone */
+    .drop-zone {
+      border: 2px dashed var(--border);
+      border-radius: 8px;
+      padding: 2.5rem 1rem;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .drop-zone:hover, .drop-zone.drag-over {
+      border-color: var(--primary);
+      background: #eff6ff;
+    }
+
+    .drop-zone.has-file {
+      border-color: var(--success);
+      background: #f0fdf4;
+    }
+
+    .drop-zone-icon { font-size: 2rem; margin-bottom: 0.5rem; }
+    .drop-zone-text { color: var(--text-muted); font-size: 0.9rem; }
+    .drop-zone-filename { font-weight: 600; color: var(--success); margin-top: 0.5rem; }
+
+    .drop-zone input[type="file"] { display: none; }
+
+    /* Format selector */
+    .format-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+      gap: 0.5rem;
+    }
+
+    .format-btn {
+      padding: 0.5rem;
+      border: 2px solid var(--border);
+      border-radius: 8px;
+      background: var(--surface);
+      cursor: pointer;
+      text-align: center;
+      font-size: 0.85rem;
+      transition: all 0.15s;
+    }
+
+    .format-btn:hover { border-color: var(--primary); }
+
+    .format-btn.selected {
+      border-color: var(--primary);
+      background: #eff6ff;
+      font-weight: 600;
+    }
+
+    .format-btn .ext { font-weight: 700; text-transform: uppercase; }
+    .format-btn .label { font-size: 0.7rem; color: var(--text-muted); display: block; }
+    .format-btn.recommended .label { color: var(--success); }
+
+    /* Options */
+    .option-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.5rem 0;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .option-row:last-child { border-bottom: none; }
+
+    .option-label {
+      font-size: 0.9rem;
+    }
+
+    .option-desc {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+
+    /* Toggle switch */
+    .toggle {
+      position: relative;
+      width: 44px;
+      height: 24px;
+      flex-shrink: 0;
+    }
+
+    .toggle input { display: none; }
+
+    .toggle-slider {
+      position: absolute;
+      inset: 0;
+      background: #cbd5e1;
+      border-radius: 24px;
+      cursor: pointer;
+      transition: 0.2s;
+    }
+
+    .toggle-slider::before {
+      content: '';
+      position: absolute;
+      width: 18px;
+      height: 18px;
+      left: 3px;
+      bottom: 3px;
+      background: white;
+      border-radius: 50%;
+      transition: 0.2s;
+    }
+
+    .toggle input:checked + .toggle-slider { background: var(--primary); }
+    .toggle input:checked + .toggle-slider::before { transform: translateX(20px); }
+
+    /* Range input */
+    .range-row { padding: 0.75rem 0; }
+    .range-header { display: flex; justify-content: space-between; align-items: center; }
+    .range-value { font-weight: 600; font-size: 0.85rem; color: var(--primary); }
+
+    input[type="range"] {
+      width: 100%;
+      margin-top: 0.5rem;
+      accent-color: var(--primary);
+    }
+
+    /* Select */
+    .unit-row { display: flex; gap: 0.5rem; align-items: center; padding: 0.5rem 0; }
+
+    select {
+      padding: 0.4rem 0.75rem;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font-size: 0.85rem;
+      background: var(--surface);
+    }
+
+    /* Convert button */
+    .convert-btn {
+      width: 100%;
+      padding: 0.85rem;
+      background: var(--primary);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+
+    .convert-btn:hover { background: var(--primary-dark); }
+    .convert-btn:disabled { background: #94a3b8; cursor: not-allowed; }
+
+    /* Status */
+    .status {
+      margin-top: 1rem;
+      padding: 0.75rem 1rem;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      display: none;
+    }
+
+    .status.loading {
+      display: block;
+      background: #eff6ff;
+      color: var(--primary);
+    }
+
+    .status.success {
+      display: block;
+      background: #f0fdf4;
+      color: var(--success);
+    }
+
+    .status.error {
+      display: block;
+      background: #fef2f2;
+      color: var(--error);
+    }
+
+    /* File info */
+    .file-info {
+      display: none;
+      margin-top: 1rem;
+      padding: 0.75rem 1rem;
+      background: #f8fafc;
+      border-radius: 8px;
+      font-size: 0.85rem;
+    }
+
+    .file-info.visible { display: block; }
+    .file-info dt { font-weight: 600; display: inline; }
+    .file-info dd { display: inline; margin-left: 0.25rem; margin-right: 1rem; }
+
+    footer {
+      text-align: center;
+      padding: 1.5rem;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>3D Print Backporter</h1>
+  <p>Convert modern 3D files for older printers — helping bring prosthetics and medical devices everywhere</p>
+</header>
+
+<main>
+  <!-- Upload -->
+  <div class="card">
+    <h2>1. Upload File</h2>
+    <div class="drop-zone" id="dropZone">
+      <div class="drop-zone-icon">&#128196;</div>
+      <div class="drop-zone-text">Drop a 3D file here or click to browse</div>
+      <div class="drop-zone-text" style="font-size:0.75rem; margin-top:0.25rem">
+        Supports: 3MF, GLTF, GLB, AMF, OBJ, FBX, STL, PLY, DAE
+      </div>
+      <div class="drop-zone-filename" id="fileName"></div>
+      <input type="file" id="fileInput" accept=".3mf,.gltf,.glb,.amf,.obj,.fbx,.stl,.ply,.dae">
+    </div>
+    <div class="file-info" id="fileInfo">
+      <dl id="fileInfoContent"></dl>
+    </div>
+  </div>
+
+  <!-- Output Format -->
+  <div class="card">
+    <h2>2. Output Format</h2>
+    <div class="format-grid" id="formatGrid"></div>
+  </div>
+
+  <!-- Options -->
+  <div class="card">
+    <h2>3. Backport Options</h2>
+
+    <div class="option-row">
+      <div>
+        <div class="option-label">Quality Mode</div>
+        <div class="option-desc" id="qualityDesc">Fast conversion for visual preview</div>
+      </div>
+      <select id="optQuality" style="padding:0.4rem 0.75rem; border:1px solid var(--border); border-radius:6px; font-size:0.85rem;">
+        <option value="rendering">Rendering Optimized</option>
+        <option value="manufacturing">Manufacturing Precision</option>
+      </select>
+    </div>
+
+    <div class="option-row">
+      <div>
+        <div class="option-label">Merge Meshes</div>
+        <div class="option-desc">Combine multi-part models into a single mesh</div>
+      </div>
+      <label class="toggle">
+        <input type="checkbox" id="optMerge">
+        <span class="toggle-slider"></span>
+      </label>
+    </div>
+
+    <div class="option-row">
+      <div>
+        <div class="option-label">Strip Colors & Materials</div>
+        <div class="option-desc">For single-color FDM printers</div>
+      </div>
+      <label class="toggle">
+        <input type="checkbox" id="optStripColor">
+        <span class="toggle-slider"></span>
+      </label>
+    </div>
+
+    <div class="option-row">
+      <div>
+        <div class="option-label">Binary Output</div>
+        <div class="option-desc">Smaller file size (recommended)</div>
+      </div>
+      <label class="toggle">
+        <input type="checkbox" id="optBinary" checked>
+        <span class="toggle-slider"></span>
+      </label>
+    </div>
+
+    <div class="unit-row">
+      <span class="option-label">Unit Conversion:</span>
+      <select id="unitsFrom">
+        <option value="">Source unit</option>
+        <option value="mm">mm</option>
+        <option value="cm">cm</option>
+        <option value="m">meters</option>
+        <option value="inch">inches</option>
+      </select>
+      <span>&#8594;</span>
+      <select id="unitsTo">
+        <option value="">Target unit</option>
+        <option value="mm">mm</option>
+        <option value="cm">cm</option>
+        <option value="m">meters</option>
+        <option value="inch">inches</option>
+      </select>
+    </div>
+
+    <div class="range-row">
+      <div class="range-header">
+        <div>
+          <div class="option-label">Mesh Simplification</div>
+          <div class="option-desc">Reduce polygon count for lower-res printers</div>
+        </div>
+        <span class="range-value" id="simplifyValue">Off</span>
+      </div>
+      <input type="range" id="optSimplify" min="0" max="100" value="0" step="5">
+    </div>
+  </div>
+
+  <!-- Convert -->
+  <div class="card">
+    <button class="convert-btn" id="convertBtn" disabled>Convert & Download</button>
+    <div class="status" id="status"></div>
+  </div>
+</main>
+
+<footer>
+  3D Print Backporter &mdash; Open source tool helping bring prosthetics and medical devices to every 3D printer
+</footer>
+
+<script>
+  // State
+  let selectedFile = null;
+  let selectedFormat = '.stl';
+
+  // DOM elements
+  const dropZone = document.getElementById('dropZone');
+  const fileInput = document.getElementById('fileInput');
+  const fileNameEl = document.getElementById('fileName');
+  const fileInfo = document.getElementById('fileInfo');
+  const fileInfoContent = document.getElementById('fileInfoContent');
+  const formatGrid = document.getElementById('formatGrid');
+  const convertBtn = document.getElementById('convertBtn');
+  const statusEl = document.getElementById('status');
+  const simplifySlider = document.getElementById('optSimplify');
+  const simplifyValue = document.getElementById('simplifyValue');
+
+  // Load supported formats
+  async function loadFormats() {
+    try {
+      const res = await fetch('/api/formats');
+      const data = await res.json();
+
+      data.output.forEach(fmt => {
+        const btn = document.createElement('div');
+        btn.className = 'format-btn' + (fmt.ext === '.stl' ? ' selected recommended' : '');
+        btn.dataset.ext = fmt.ext;
+        btn.innerHTML = `<span class="ext">${fmt.ext.replace('.', '')}</span>
+          <span class="label">${fmt.ext === '.stl' ? 'Most Compatible' : fmt.name}</span>`;
+        btn.addEventListener('click', () => selectFormat(fmt.ext));
+        formatGrid.appendChild(btn);
+      });
+    } catch {
+      formatGrid.innerHTML = '<div style="color:var(--error)">Failed to load formats</div>';
+    }
+  }
+
+  function selectFormat(ext) {
+    selectedFormat = ext;
+    document.querySelectorAll('.format-btn').forEach(btn => {
+      btn.classList.toggle('selected', btn.dataset.ext === ext);
+    });
+  }
+
+  // File handling
+  function handleFile(file) {
+    selectedFile = file;
+    fileNameEl.textContent = file.name;
+    dropZone.classList.add('has-file');
+    convertBtn.disabled = false;
+    fetchFileInfo(file);
+  }
+
+  async function fetchFileInfo(file) {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+      const res = await fetch('/api/info', { method: 'POST', body: formData });
+      if (res.ok) {
+        const info = await res.json();
+        fileInfoContent.innerHTML = `
+          <dt>Meshes:</dt><dd>${info.meshCount}</dd>
+          <dt>Vertices:</dt><dd>${info.totalVertices.toLocaleString()}</dd>
+          <dt>Faces:</dt><dd>${info.totalFaces.toLocaleString()}</dd>
+          <dt>Colors:</dt><dd>${info.hasColors ? 'Yes' : 'No'}</dd>
+          <dt>Materials:</dt><dd>${info.hasMaterials ? 'Yes' : 'No'}</dd>
+        `;
+        fileInfo.classList.add('visible');
+      }
+    } catch {
+      // Info fetch is non-critical
+    }
+  }
+
+  // Drop zone events
+  dropZone.addEventListener('click', () => fileInput.click());
+  fileInput.addEventListener('change', (e) => {
+    if (e.target.files[0]) handleFile(e.target.files[0]);
+  });
+
+  dropZone.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    dropZone.classList.add('drag-over');
+  });
+
+  dropZone.addEventListener('dragleave', () => {
+    dropZone.classList.remove('drag-over');
+  });
+
+  dropZone.addEventListener('drop', (e) => {
+    e.preventDefault();
+    dropZone.classList.remove('drag-over');
+    if (e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]);
+  });
+
+  // Quality mode
+  const qualitySelect = document.getElementById('optQuality');
+  const qualityDesc = document.getElementById('qualityDesc');
+  qualitySelect.addEventListener('change', () => {
+    qualityDesc.textContent = qualitySelect.value === 'manufacturing'
+      ? 'Recomputes normals, removes degenerate triangles, validates geometry'
+      : 'Fast conversion for visual preview';
+  });
+
+  // Simplify slider
+  simplifySlider.addEventListener('input', () => {
+    const val = parseInt(simplifySlider.value);
+    simplifyValue.textContent = val === 0 ? 'Off' : `Keep ${100 - val}%`;
+  });
+
+  // Convert
+  convertBtn.addEventListener('click', async () => {
+    if (!selectedFile) return;
+
+    convertBtn.disabled = true;
+    statusEl.className = 'status loading';
+    statusEl.textContent = 'Converting... this may take a moment for large files.';
+
+    const formData = new FormData();
+    formData.append('file', selectedFile);
+    formData.append('outputFormat', selectedFormat);
+    formData.append('quality', document.getElementById('optQuality').value);
+    formData.append('merge', document.getElementById('optMerge').checked);
+    formData.append('stripColor', document.getElementById('optStripColor').checked);
+    formData.append('binary', document.getElementById('optBinary').checked);
+
+    const unitsFrom = document.getElementById('unitsFrom').value;
+    const unitsTo = document.getElementById('unitsTo').value;
+    if (unitsFrom && unitsTo) {
+      formData.append('unitsFrom', unitsFrom);
+      formData.append('unitsTo', unitsTo);
+    }
+
+    const simplify = parseInt(simplifySlider.value);
+    if (simplify > 0) {
+      formData.append('simplify', ((100 - simplify) / 100).toString());
+    }
+
+    try {
+      const res = await fetch('/api/convert', { method: 'POST', body: formData });
+
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({ error: 'Conversion failed' }));
+        throw new Error(errData.error);
+      }
+
+      // Download the result
+      const blob = await res.blob();
+      const baseName = selectedFile.name.replace(/\.[^.]+$/, '');
+      const outputName = baseName + selectedFormat;
+
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = outputName;
+      a.click();
+      URL.revokeObjectURL(url);
+
+      statusEl.className = 'status success';
+      statusEl.textContent = `Converted successfully! Downloaded as ${outputName}`;
+    } catch (error) {
+      statusEl.className = 'status error';
+      statusEl.textContent = `Error: ${error.message}`;
+    } finally {
+      convertBtn.disabled = false;
+    }
+  });
+
+  // Init
+  loadFormats();
+</script>
+
+</body>
+</html>
